@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { Patient, PatientStatus } from '@/types/patient';
+import { Button } from '@/components/ui/button';
 
 interface PatientListProps {
   patients: Patient[];
   onEdit?: (patient: Patient) => void;
   onDelete?: (patientId: number) => void;
-  onSearch?: (query: string) => void;
   isLoading?: boolean;
 }
 
@@ -22,17 +22,9 @@ export default function PatientList({
   patients,
   onEdit,
   onDelete,
-  onSearch,
   isLoading = false,
 }: PatientListProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    onSearch?.(query);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -76,25 +68,10 @@ export default function PatientList({
 
   return (
     <div className="space-y-6">
-      {/* Search Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Patient Dashboard</h2>
-        <div className="w-full sm:w-auto">
-          <label htmlFor="search" className="sr-only">
-            Search patients
-          </label>
-          <input
-            type="text"
-            id="search"
-            placeholder="Search by name or status..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center">
+        <h2 className="text-2xl font-bold">Patient Dashboard</h2>
       </div>
 
-      {/* Patient Count */}
       <div className="bg-gray-50 px-4 py-2 rounded-md">
         <p className="text-sm text-gray-600">
           {patients.length === 0
@@ -103,7 +80,6 @@ export default function PatientList({
         </p>
       </div>
 
-      {/* Patient Cards - Mobile View */}
       <div className="sm:hidden space-y-4">
         {patients.map((patient) => (
           <div key={patient.id} className="bg-white p-4 rounded-lg shadow-md border">
@@ -130,27 +106,24 @@ export default function PatientList({
 
             <div className="flex space-x-2">
               {onEdit && (
-                <button
-                  onClick={() => onEdit(patient)}
-                  className="px-3 py-1 text-sm text-blue-600 bg-blue-50 rounded hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                <Button variant="outline" size="sm" onClick={() => onEdit(patient)}>
                   Edit
-                </button>
+                </Button>
               )}
               {onDelete && (
-                <button
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={() => handleDeleteClick(patient.id)}
-                  className="px-3 py-1 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   Delete
-                </button>
+                </Button>
               )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Patient Table - Desktop View */}
       <div className="hidden sm:block bg-white shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -220,20 +193,19 @@ export default function PatientList({
                 {(onEdit || onDelete) && (
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     {onEdit && (
-                      <button
-                        onClick={() => onEdit(patient)}
-                        className="text-blue-600 hover:text-blue-900 focus:outline-none focus:underline"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => onEdit(patient)}>
                         Edit
-                      </button>
+                      </Button>
                     )}
                     {onDelete && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleDeleteClick(patient.id)}
-                        className="text-red-600 hover:text-red-900 focus:outline-none focus:underline"
+                        className="text-destructive hover:text-destructive"
                       >
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </td>
                 )}
@@ -251,7 +223,6 @@ export default function PatientList({
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full">
@@ -260,18 +231,12 @@ export default function PatientList({
               Are you sure you want to delete this patient? This action cannot be undone.
             </p>
             <div className="flex space-x-3 justify-end">
-              <button
-                onClick={cancelDelete}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
+              <Button variant="outline" onClick={cancelDelete}>
                 Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -13,6 +13,13 @@ const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   ...compat.extends('plugin:jsx-a11y/recommended'),
   ...compat.extends('prettier'),
+  {
+    files: ['src/components/ui/**/*.tsx'],
+    rules: {
+      'jsx-a11y/heading-has-content': 'off',
+      'jsx-a11y/label-has-associated-control': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;

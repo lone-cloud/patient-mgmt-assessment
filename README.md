@@ -2,6 +2,10 @@
 
 A user-friendly, web-based application that allows healthcare providers to efficiently manage critical patient data.
 
+## Demo
+
+![Patient Management System UI](demo.png)
+
 ## Technology Stack
 
 - **Frontend**: Next.js 15 with React 19 and TypeScript

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import PatientForm from '@/components/PatientForm';
 import PatientList from '@/components/PatientList';
 import { Patient, CreatePatientRequest } from '@/types/patient';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,

@@ -12,8 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface PatientManagementClientProps {
   initialPatients: Patient[];
@@ -23,7 +22,7 @@ export default function PatientManagementClient({ initialPatients }: PatientMana
   const [patients, setPatients] = useState<Patient[]>(initialPatients);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { toast } = useToast();
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
 
   const handleAddPatient = async (patientData: CreatePatientRequest) => {
     try {
@@ -45,22 +44,63 @@ export default function PatientManagementClient({ initialPatients }: PatientMana
       const newPatient = await response.json();
       setPatients((prev) => [newPatient, ...prev]);
       setIsModalOpen(false);
-      toast({
-        title: 'Success',
-        description: 'Patient added successfully!',
-      });
+      toast.success('Patient added successfully!');
     } catch (error) {
       console.error('Error adding patient:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to add patient. Please try again.',
-      });
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to add patient. Please try again.',
+      );
       throw error;
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditPatient = async (patientData: CreatePatientRequest) => {
+    if (!editingPatient) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch(`/api/patients/${editingPatient.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(patientData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update patient');
+      }
+
+      const updatedPatient = await response.json();
+      setPatients((prev) =>
+        prev.map((patient) => (patient.id === editingPatient.id ? updatedPatient : patient)),
+      );
+      setEditingPatient(null);
+      setIsModalOpen(false);
+      toast.success('Patient updated successfully!');
+    } catch (error) {
+      console.error('Error updating patient:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to update patient. Please try again.',
+      );
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenEditModal = (patient: Patient) => {
+    setEditingPatient(patient);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingPatient(null);
   };
 
   const handleDeletePatient = async (patientId: number) => {
@@ -74,53 +114,42 @@ export default function PatientManagementClient({ initialPatients }: PatientMana
       }
 
       setPatients((prev) => prev.filter((patient) => patient.id !== patientId));
-      toast({
-        title: 'Success',
-        description: 'Patient deleted successfully!',
-      });
+      toast.success('Patient deleted successfully!');
     } catch (error) {
       console.error('Error deleting patient:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete patient. Please try again.',
-      });
+      toast.error('Failed to delete patient. Please try again.');
     }
   };
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Patient Management System</h1>
-        <p className="text-gray-600">
-          Efficiently manage critical patient data for healthcare providers
-        </p>
-      </div>
-
-      <div className="mb-8">
-        <Button onClick={() => setIsModalOpen(true)} className="cursor-pointer">
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Patient
-        </Button>
-      </div>
-
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
+        <DialogContent className="max-w-4xl max-h-screen overflow-y-auto m-0 sm:m-6 w-full sm:w-auto">
           <DialogHeader>
-            <DialogTitle>Add New Patient</DialogTitle>
-            <DialogDescription>
-              Enter the patient information below to add them to the system.
+            <DialogTitle className="text-lg font-semibold">
+              {editingPatient ? 'Edit Patient' : 'Add New Patient'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-600">
+              {editingPatient
+                ? 'Update the patient information below.'
+                : 'Enter the patient information below to add them to the system.'}
             </DialogDescription>
           </DialogHeader>
           <PatientForm
-            onSubmit={handleAddPatient}
-            onCancel={() => setIsModalOpen(false)}
+            onSubmit={editingPatient ? handleEditPatient : handleAddPatient}
+            onCancel={handleCloseModal}
             isLoading={isSubmitting}
+            initialData={editingPatient || undefined}
           />
         </DialogContent>
       </Dialog>
 
-      <PatientList patients={patients} onDelete={handleDeletePatient} />
+      <PatientList
+        patients={patients}
+        onEdit={handleOpenEditModal}
+        onDelete={handleDeletePatient}
+        onAdd={() => setIsModalOpen(true)}
+      />
     </>
   );
 }

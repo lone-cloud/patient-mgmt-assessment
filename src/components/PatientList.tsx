@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { Patient, PatientStatus } from '@/types/patient';
 import { Button } from '@/components/ui/button';
+import { Edit, Trash2, Plus } from 'lucide-react';
 
 interface PatientListProps {
   patients: Patient[];
   onEdit?: (patient: Patient) => void;
   onDelete?: (patientId: number) => void;
-  isLoading?: boolean;
+  onAdd?: () => void;
 }
 
 const STATUS_COLORS: Record<PatientStatus, string> = {
@@ -18,12 +19,7 @@ const STATUS_COLORS: Record<PatientStatus, string> = {
   Churned: 'bg-red-100 text-red-800',
 };
 
-export default function PatientList({
-  patients,
-  onEdit,
-  onDelete,
-  isLoading = false,
-}: PatientListProps) {
+export default function PatientList({ patients, onEdit, onDelete, onAdd }: PatientListProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
 
   const formatDate = (dateString: string) => {
@@ -57,19 +53,16 @@ export default function PatientList({
     setShowDeleteConfirm(null);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading patients...</span>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-10">
         <h2 className="text-2xl font-bold">Patient Dashboard</h2>
+        {onAdd && (
+          <Button onClick={onAdd} className="mt-2 sm:mt-0">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Patient
+          </Button>
+        )}
       </div>
 
       <div className="bg-gray-50 px-4 py-2 rounded-md">
@@ -80,7 +73,7 @@ export default function PatientList({
         </p>
       </div>
 
-      <div className="sm:hidden space-y-4">
+      <div className="md:hidden space-y-4">
         {patients.map((patient) => (
           <div key={patient.id} className="bg-white p-4 rounded-lg shadow-md border">
             <div className="flex justify-between items-start mb-2">
@@ -106,8 +99,13 @@ export default function PatientList({
 
             <div className="flex space-x-2">
               {onEdit && (
-                <Button variant="outline" size="sm" onClick={() => onEdit(patient)}>
-                  Edit
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(patient)}
+                  title="Edit patient"
+                >
+                  <Edit className="h-4 w-4" />
                 </Button>
               )}
               {onDelete && (
@@ -115,8 +113,9 @@ export default function PatientList({
                   variant="destructive"
                   size="sm"
                   onClick={() => handleDeleteClick(patient.id)}
+                  title="Delete patient"
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
@@ -124,7 +123,7 @@ export default function PatientList({
         ))}
       </div>
 
-      <div className="hidden sm:block bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="hidden md:block bg-white shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -161,7 +160,7 @@ export default function PatientList({
               {(onEdit || onDelete) && (
                 <th
                   scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -191,10 +190,15 @@ export default function PatientList({
                   {formatDate(patient.createdAt)}
                 </td>
                 {(onEdit || onDelete) && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                  <td className="px-6 py-4 whitespace-nowrap space-x-2">
                     {onEdit && (
-                      <Button variant="ghost" size="sm" onClick={() => onEdit(patient)}>
-                        Edit
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(patient)}
+                        title="Edit patient"
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
                     )}
                     {onDelete && (
@@ -203,8 +207,9 @@ export default function PatientList({
                         size="sm"
                         onClick={() => handleDeleteClick(patient.id)}
                         className="text-destructive hover:text-destructive"
+                        title="Delete patient"
                       >
-                        Delete
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </td>

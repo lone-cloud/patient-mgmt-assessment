@@ -1,14 +1,32 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type SortingState,
+} from '@tanstack/react-table';
+import { Edit, Trash2, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+
+import { formatDate, formatFullName, formatAddress } from '@/lib/format';
 import { Patient, PatientStatus } from '@/types/patient';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface PatientListProps {
   patients: Patient[];
-  onEdit?: (patient: Patient) => void;
-  onDelete?: (patientId: number) => void;
+  onEdit: (patient: Patient) => void;
+  onDelete: (patientId: number) => void;
   onAdd?: () => void;
 }
 
@@ -21,22 +39,7 @@ const STATUS_COLORS: Record<PatientStatus, string> = {
 
 export default function PatientList({ patients, onEdit, onDelete, onAdd }: PatientListProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatFullName = (patient: Patient) => {
-    return `${patient.firstName}${patient.middleName ? ` ${patient.middleName}` : ''} ${patient.lastName}`;
-  };
-
-  const formatAddress = (patient: Patient) => {
-    return `${patient.street}, ${patient.city}, ${patient.state} ${patient.zipCode}`;
-  };
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const handleDeleteClick = (patientId: number) => {
     setShowDeleteConfirm(patientId);
@@ -52,6 +55,83 @@ export default function PatientList({ patients, onEdit, onDelete, onAdd }: Patie
   const cancelDelete = () => {
     setShowDeleteConfirm(null);
   };
+
+  const columnHelper = createColumnHelper<Patient>();
+
+  const columns = [
+    columnHelper.accessor((row) => formatFullName(row), {
+      id: 'name',
+      header: 'Patient',
+      enableSorting: true,
+    }),
+    columnHelper.accessor('dateOfBirth', {
+      header: 'Date of Birth',
+      cell: (info) => formatDate(info.getValue()),
+      enableSorting: true,
+      sortingFn: 'datetime',
+    }),
+    columnHelper.accessor('status', {
+      header: 'Status',
+      cell: (info) => (
+        <span
+          className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[info.getValue()]}`}
+        >
+          {info.getValue()}
+        </span>
+      ),
+      enableSorting: true,
+    }),
+    columnHelper.accessor((row) => formatAddress(row), {
+      id: 'address',
+      header: 'Address',
+      cell: (info) => <span className="max-w-xs truncate block">{info.getValue()}</span>,
+      enableSorting: true,
+    }),
+    columnHelper.accessor('createdAt', {
+      header: 'Added',
+      cell: (info) => formatDate(info.getValue()),
+      enableSorting: true,
+      sortingFn: 'datetime',
+    }),
+    columnHelper.display({
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(row.original)}
+            title="Edit patient"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDeleteClick(row.original.id)}
+            className="text-destructive hover:text-destructive"
+            title="Delete patient"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    }),
+  ];
+
+  const table = useReactTable({
+    data: patients,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   return (
     <div className="space-y-6">
@@ -98,134 +178,87 @@ export default function PatientList({ patients, onEdit, onDelete, onAdd }: Patie
             </div>
 
             <div className="flex space-x-2">
-              {onEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEdit(patient)}
-                  title="Edit patient"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDeleteClick(patient.id)}
-                  title="Delete patient"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(patient)}
+                title="Edit patient"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteClick(patient.id)}
+                title="Delete patient"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         ))}
       </div>
 
       <div className="hidden md:block bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Patient
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Date of Birth
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Address
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Added
-              </th>
-              {(onEdit || onDelete) && (
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {patients.map((patient) => (
-              <tr key={patient.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{formatFullName(patient)}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {formatDate(patient.dateOfBirth)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[patient.status]}`}
-                  >
-                    {patient.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                  {formatAddress(patient)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {formatDate(patient.createdAt)}
-                </td>
-                {(onEdit || onDelete) && (
-                  <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                    {onEdit && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(patient)}
-                        title="Edit patient"
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="px-6 py-3">
+                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                      <button
+                        type="button"
+                        className="flex items-center space-x-1 cursor-pointer select-none hover:text-gray-900 focus:outline-none focus:text-gray-900 text-left font-medium text-xs text-gray-500 uppercase tracking-wider transition-colors"
+                        onClick={header.column.getToggleSortingHandler()}
+                        title={`Sort by ${header.column.columnDef.header as string}`}
                       >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                        <span>
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </span>
+                        <span className="ml-1">
+                          {{
+                            asc: <ChevronUp className="h-4 w-4" />,
+                            desc: <ChevronDown className="h-4 w-4" />,
+                          }[header.column.getIsSorted() as string] ?? (
+                            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                          )}
+                        </span>
+                      </button>
+                    ) : (
+                      <span className="font-medium text-xs text-gray-500 uppercase tracking-wider">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </span>
                     )}
-                    {onDelete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClick(patient.id)}
-                        className="text-destructive hover:text-destructive"
-                        title="Delete patient"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </td>
-                )}
-              </tr>
+                  </TableHead>
+                ))}
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-
-        {patients.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              No patients found. Add your first patient to get started.
-            </p>
-          </div>
-        )}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className="hover:bg-gray-50"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="px-6 py-4">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No patients found. Add your first patient to get started.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {showDeleteConfirm && (
